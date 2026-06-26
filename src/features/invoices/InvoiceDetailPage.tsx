@@ -1,6 +1,11 @@
 import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { useCancelInvoice, useEmitInvoice, useInvoiceDetail } from "../../api/billing";
+import {
+  useCancelInvoice,
+  useEmitInvoice,
+  useInvoiceDetail,
+  useInvoicePdf,
+} from "../../api/billing";
 import { Badge, Button, Card, ErrorNote, Modal, Spinner } from "../../components/ui";
 import {
   INVOICE_STATUS_LABELS,
@@ -14,6 +19,7 @@ export function InvoiceDetailPage() {
   const { data: invoice, isLoading, error } = useInvoiceDetail(id ?? null);
   const emit = useEmitInvoice();
   const cancel = useCancelInvoice();
+  const pdf = useInvoicePdf();
   const [confirmCancel, setConfirmCancel] = useState(false);
   const [reason, setReason] = useState("");
 
@@ -87,14 +93,27 @@ export function InvoiceDetailPage() {
           <dd>{formatDateTime(lastCae?.caeExpiry ?? null)}</dd>
         </dl>
 
-        {(emit.error || cancel.error) && (
-          <ErrorNote message={((emit.error ?? cancel.error) as Error).message} />
+        {(emit.error || cancel.error || pdf.error) && (
+          <ErrorNote message={((emit.error ?? cancel.error ?? pdf.error) as Error).message} />
         )}
 
         <div className="flex gap-2">
           {invoice.status === "draft" && (
             <Button onClick={() => emit.mutate(invoice.id)} disabled={emit.isPending}>
               {emit.isPending ? "Pidiendo CAE…" : "Emitir (pedir CAE)"}
+            </Button>
+          )}
+          {lastCae?.cae && (
+            <Button
+              variant="ghost"
+              disabled={pdf.isPending}
+              onClick={() =>
+                pdf.mutate(invoice.id, {
+                  onSuccess: (data) => window.open(data.url, "_blank", "noopener"),
+                })
+              }
+            >
+              {pdf.isPending ? "Generando PDF…" : "Descargar factura"}
             </Button>
           )}
           {invoice.status !== "cancelled" && (
