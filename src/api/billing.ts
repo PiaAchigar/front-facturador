@@ -116,6 +116,13 @@ export function useEmitInvoice() {
   });
 }
 
+export function useInvoicePdf() {
+  return useMutation({
+    mutationFn: (id: string) =>
+      api<{ url: string; fileName: string }>(`/api/billing/invoices/${id}/pdf`),
+  });
+}
+
 export function useEmitBatch() {
   const queryClient = useQueryClient();
   return useMutation({
