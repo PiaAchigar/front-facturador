@@ -1,3 +1,5 @@
+import { getAuthToken } from "../lib/auth-token";
+
 const BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8787";
 const API_KEY = import.meta.env.VITE_API_KEY as string | undefined;
 
@@ -12,13 +14,22 @@ export class ApiError extends Error {
 }
 
 export async function api<T>(path: string, init?: RequestInit): Promise<T> {
+  // Embebido en el dashboard: el host manda el JWT del staff (rol real) por
+  // postMessage → header `Authorization`. Standalone (dev): cae al API key.
+  const token = getAuthToken();
+  const { headers: initHeaders, ...rest } = init ?? {};
+
   const res = await fetch(`${BASE_URL}${path}`, {
+    ...rest,
     headers: {
       "Content-Type": "application/json",
-      ...(API_KEY ? { "x-api-key": API_KEY } : {}),
-      ...init?.headers,
+      ...(token
+        ? { Authorization: `Bearer ${token}` }
+        : API_KEY
+          ? { "x-api-key": API_KEY }
+          : {}),
+      ...initHeaders,
     },
-    ...init,
   });
   if (!res.ok) {
     const body = await res.json().catch(() => null);
