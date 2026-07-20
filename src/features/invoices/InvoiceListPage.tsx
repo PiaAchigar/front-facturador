@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useEmitBatch, useInvoices } from "../../api/billing";
-import { Badge, Button, Card, ErrorNote, Spinner } from "../../components/ui";
+import { Badge, Button, Card, ErrorNote, Input, Spinner } from "../../components/ui";
 import {
   INVOICE_STATUS_LABELS,
   formatDateTime,
@@ -16,10 +16,20 @@ const STATUS_TONES: Record<string, "neutral" | "success" | "warning" | "danger" 
   cancelled: "danger",
 };
 
+const EMPTY_FILTERS = { status: "", invoiceType: "", from: "", to: "", search: "" };
+
 export function InvoiceListPage() {
   const [status, setStatus] = useState<string>("");
+  const [invoiceType, setInvoiceType] = useState<string>("");
+  const [from, setFrom] = useState<string>("");
+  const [to, setTo] = useState<string>("");
+  const [search, setSearch] = useState<string>("");
   const [checked, setChecked] = useState<Set<string>>(new Set());
-  const invoices = useInvoices({ status: status || undefined });
+  const invoices = useInvoices({
+    status: status || undefined,
+    from: from || undefined,
+    to: to || undefined,
+  });
   const emitBatch = useEmitBatch();
 
   const toggle = (id: string) => {
@@ -31,13 +41,80 @@ export function InvoiceListPage() {
     });
   };
 
-  const drafts = invoices.data?.filter((i) => i.status === "draft") ?? [];
+  // El status y el rango de fechas ya se filtran en el backend; el tipo de
+  // comprobante y la búsqueda libre (cliente, DNI o número) se resuelven acá
+  // porque no requieren un viaje extra al servidor.
+  const filtered = useMemo(() => {
+    const term = search.trim().toLowerCase();
+    return (invoices.data ?? []).filter((inv) => {
+      if (invoiceType && inv.invoiceType !== invoiceType) return false;
+      if (!term) return true;
+      const haystack = [
+        inv.customerName,
+        inv.customerDni,
+        invoiceNumberFmt(2, inv.invoiceNumber),
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+      return haystack.includes(term);
+    });
+  }, [invoices.data, invoiceType, search]);
+
+  const drafts = filtered.filter((i) => i.status === "draft");
+  const invoiceTypes = useMemo(
+    () =>
+      [...new Set((invoices.data ?? []).map((i) => i.invoiceType).filter(Boolean))].sort() as string[],
+    [invoices.data],
+  );
+  const filtersActive =
+    status !== EMPTY_FILTERS.status ||
+    invoiceType !== EMPTY_FILTERS.invoiceType ||
+    from !== EMPTY_FILTERS.from ||
+    to !== EMPTY_FILTERS.to ||
+    search !== EMPTY_FILTERS.search;
+
+  const clearFilters = () => {
+    setStatus(EMPTY_FILTERS.status);
+    setInvoiceType(EMPTY_FILTERS.invoiceType);
+    setFrom(EMPTY_FILTERS.from);
+    setTo(EMPTY_FILTERS.to);
+    setSearch(EMPTY_FILTERS.search);
+  };
 
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-3xl font-semibold">Facturas</h2>
-        <div className="flex items-center gap-3">
+        {drafts.length > 0 && (
+          <Button
+            onClick={() =>
+              emitBatch.mutate(checked.size > 0 ? [...checked] : undefined, {
+                onSuccess: () => setChecked(new Set()),
+              })
+            }
+            disabled={emitBatch.isPending}
+          >
+            {emitBatch.isPending
+              ? "Emitiendo…"
+              : checked.size > 0
+                ? `Emitir seleccionadas (${checked.size})`
+                : `Emitir todos los borradores (${drafts.length})`}
+          </Button>
+        )}
+      </div>
+
+      <Card className="flex flex-wrap items-end gap-3">
+        <div className="min-w-50 flex-1">
+          <Input
+            label="Buscar"
+            placeholder="Cliente, DNI o número…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+        <label className="block">
+          <span className="mb-1 block text-xs font-medium text-ink-soft">Estado</span>
           <select
             value={status}
             onChange={(e) => setStatus(e.target.value)}
@@ -46,26 +123,45 @@ export function InvoiceListPage() {
             <option value="">Todos los estados</option>
             <option value="draft">Borradores</option>
             <option value="emitted">Emitidas</option>
+            <option value="paid">Pagadas</option>
             <option value="cancelled">Anuladas</option>
           </select>
-          {drafts.length > 0 && (
-            <Button
-              onClick={() =>
-                emitBatch.mutate(checked.size > 0 ? [...checked] : undefined, {
-                  onSuccess: () => setChecked(new Set()),
-                })
-              }
-              disabled={emitBatch.isPending}
-            >
-              {emitBatch.isPending
-                ? "Emitiendo…"
-                : checked.size > 0
-                  ? `Emitir seleccionadas (${checked.size})`
-                  : `Emitir todos los borradores (${drafts.length})`}
-            </Button>
-          )}
-        </div>
-      </div>
+        </label>
+        <label className="block">
+          <span className="mb-1 block text-xs font-medium text-ink-soft">Tipo</span>
+          <select
+            value={invoiceType}
+            onChange={(e) => setInvoiceType(e.target.value)}
+            className="rounded-xl border border-surface-highest bg-white px-3 py-2 text-sm"
+          >
+            <option value="">Todos los tipos</option>
+            {invoiceTypes.map((t) => (
+              <option key={t} value={t}>
+                Factura {t}
+              </option>
+            ))}
+          </select>
+        </label>
+        <Input
+          type="date"
+          label="Desde"
+          value={from}
+          onChange={(e) => setFrom(e.target.value)}
+          className="min-w-38"
+        />
+        <Input
+          type="date"
+          label="Hasta"
+          value={to}
+          onChange={(e) => setTo(e.target.value)}
+          className="min-w-38"
+        />
+        {filtersActive && (
+          <Button variant="ghost" onClick={clearFilters}>
+            Limpiar filtros
+          </Button>
+        )}
+      </Card>
 
       {emitBatch.data && (
         <Card className="space-y-1 text-sm">
@@ -96,7 +192,7 @@ export function InvoiceListPage() {
             </tr>
           </thead>
           <tbody>
-            {invoices.data?.map((inv) => (
+            {filtered.map((inv) => (
               <tr
                 key={inv.id}
                 className={`border-b border-surface-high last:border-0 ${
@@ -128,7 +224,7 @@ export function InvoiceListPage() {
                 </td>
               </tr>
             ))}
-            {invoices.data?.length === 0 && (
+            {filtered.length === 0 && !invoices.isLoading && (
               <tr>
                 <td colSpan={6} className="p-6 text-center text-ink-soft">
                   No hay facturas con este filtro.
