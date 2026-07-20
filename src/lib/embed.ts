@@ -3,7 +3,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { setAuthToken } from "./auth-token";
 
 /**
- * Modo embebido: el facturador corre dentro de un <iframe> del dashboard.
+ * Modo embebido: el biller corre dentro de un <iframe> del dashboard.
  * Se activa con `?embed=1` en la URL (el host carga `/?embed=1`).
  */
 export const isEmbedded =
@@ -11,9 +11,7 @@ export const isEmbedded =
   new URLSearchParams(window.location.search).get("embed") === "1";
 
 /** Origen del dashboard (host). Se valida en cada mensaje recibido. */
-const DASHBOARD_ORIGIN = import.meta.env.VITE_DASHBOARD_ORIGIN as
-  | string
-  | undefined;
+const DASHBOARD_ORIGIN = import.meta.env.VITE_DASHBOARD_ORIGIN as string | undefined;
 
 const READY_MSG = "piubella:biller:ready";
 const TOKEN_MSG = "piubella:biller:token";

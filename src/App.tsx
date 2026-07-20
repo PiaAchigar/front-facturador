@@ -39,9 +39,5 @@ export default function App() {
     </AppShell>
   );
 
-  return (
-    <BrowserRouter>
-      {isEmbedded ? <EmbedGate>{shell}</EmbedGate> : shell}
-    </BrowserRouter>
-  );
+  return <BrowserRouter>{isEmbedded ? <EmbedGate>{shell}</EmbedGate> : shell}</BrowserRouter>;
 }
