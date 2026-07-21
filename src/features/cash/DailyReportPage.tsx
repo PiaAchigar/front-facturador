@@ -67,6 +67,12 @@ export function DailyReportPage() {
                           (transferido a {p.receivedByProviderName})
                         </span>
                       )}
+                      {p.appointmentProviderEarning != null && p.appointmentProviderEarning > 0 && (
+                        <span className="block text-xs text-ink-soft">
+                          de esto, {money(p.appointmentProviderEarning)} son de{" "}
+                          {p.appointmentProviderName ?? "la profesional"}
+                        </span>
+                      )}
                     </td>
                     <td className="p-3">{PAYMENT_METHOD_LABELS[p.paymentMethod ?? ""] ?? "—"}</td>
                     <td className="p-3">{p.isDeclared ? "Sí" : "No"}</td>

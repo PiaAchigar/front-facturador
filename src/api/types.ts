@@ -19,6 +19,23 @@ export type Provider = {
   fullName: string | null;
 };
 
+export type AppointmentForCheckout = {
+  id: string;
+  status: string | null;
+  servicePrice: number | null;
+  customerId: string | null;
+  customerName: string | null;
+  serviceId: string | null;
+  serviceName: string | null;
+  providerId: string | null;
+  providerName: string | null;
+  providerPaymentType: string | null;
+  providerRate: number | null;
+  /** Comisión de la proveedora sobre este turno (congelada si ya se completó, estimada si no). */
+  providerEarning: number | null;
+  providerEarningIsPreview: boolean;
+};
+
 export type InvoiceSummary = {
   id: string;
   invoiceNumber: number | null;
@@ -63,6 +80,10 @@ export type Payment = {
   invoiceNumber: number | null;
   customerName: string | null;
   receivedByProviderName: string | null;
+  appointmentId: string | null;
+  /** Si el cobro vino de un turno, cuánto de este monto es comisión de la proveedora. */
+  appointmentProviderName: string | null;
+  appointmentProviderEarning: number | null;
 };
 
 export type CashMovement = {

@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import { useCheckout, useProviders, useServices } from "../../api/billing";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useAppointment, useCheckout, useCustomer, useProviders, useServices } from "../../api/billing";
 import type { Customer, Service } from "../../api/types";
 import { CustomerSearch } from "../../components/CustomerSearch";
 import { Button, Card, ErrorNote, Input, Spinner } from "../../components/ui";
@@ -20,9 +20,20 @@ function useDebounced(value: string, ms = 300): string {
   return debounced;
 }
 
+/** Turno que la agenda pidió cobrar, si se llegó por handoff desde el dashboard. */
+function handoffFromUrl(): { appointmentId: string; customerId: string } | null {
+  if (typeof window === "undefined") return null;
+  const params = new URLSearchParams(window.location.search);
+  const appointmentId = params.get("appointmentId");
+  const customerId = params.get("customerId");
+  return appointmentId && customerId ? { appointmentId, customerId } : null;
+}
+
 export function CheckoutPage() {
+  const [handoff] = useState(handoffFromUrl);
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [items, setItems] = useState<Item[]>([]);
+  const [appointmentId, setAppointmentId] = useState<string | null>(handoff?.appointmentId ?? null);
   const [serviceQuery, setServiceQuery] = useState("");
   const [method, setMethod] = useState<"cash" | "bank_transfer" | "mercadopago">("cash");
   const [wantsInvoice, setWantsInvoice] = useState(false);
@@ -33,6 +44,42 @@ export function CheckoutPage() {
   const services = useServices(debouncedQuery);
   const providers = useProviders();
   const checkout = useCheckout();
+  const handoffCustomer = useCustomer(handoff?.customerId ?? null);
+  const handoffAppointment = useAppointment(handoff?.appointmentId ?? null);
+
+  // Precarga cliente + ítem del turno una sola vez, cuando llegan los datos
+  // (viene de "Cobrar" en la agenda). Si el turno no tiene precio o ya se usó
+  // el prefill, no hace nada.
+  const prefilled = useRef(false);
+  useEffect(() => {
+    if (prefilled.current || !handoff) return;
+    if (!handoffCustomer.data || !handoffAppointment.data) return;
+    prefilled.current = true;
+    setCustomer(handoffCustomer.data);
+    const appt = handoffAppointment.data;
+    if (appt.serviceId) {
+      setItems((prev) => [
+        ...prev,
+        {
+          service: {
+            id: appt.serviceId,
+            name: appt.serviceName,
+            unitPriceList: null,
+            unitPriceCash: null,
+            estimatedDurationMinutes: null,
+          },
+          quantity: 1,
+          unitPrice: appt.servicePrice ?? 0,
+        },
+      ]);
+    }
+    setWantsInvoice(true);
+  }, [handoff, handoffCustomer.data, handoffAppointment.data]);
+
+  // Desglose de la comisión de la proveedora en el turno vinculado (si hay).
+  const linkedProviderEarning = handoffAppointment.data?.providerEarning ?? null;
+  const linkedProviderName = handoffAppointment.data?.providerName ?? null;
+  const linkedEarningIsPreview = handoffAppointment.data?.providerEarningIsPreview ?? false;
 
   const total = useMemo(
     () => items.reduce((sum, i) => sum + i.unitPrice * i.quantity, 0),
@@ -54,7 +101,7 @@ export function CheckoutPage() {
   const addService = (svc: Service) => {
     setItems((prev) => [
       ...prev,
-      { service: svc, quantity: 1, unitPrice: svc.unitPriceList ?? 0 },
+      { service: svc, quantity: 1, unitPrice: svc.unitPriceCash ?? 0 },
     ]);
     setServiceQuery("");
   };
@@ -65,6 +112,7 @@ export function CheckoutPage() {
     checkout.mutate(
       {
         customerId: customer.id,
+        appointmentId: appointmentId ?? undefined,
         items: items.map((i) => ({
           serviceId: i.service.id,
           quantity: i.quantity,
@@ -88,6 +136,7 @@ export function CheckoutPage() {
           setCustomer(null);
           setWantsInvoice(false);
           setPaidToProvider("");
+          setAppointmentId(null);
         },
       },
     );
@@ -100,6 +149,12 @@ export function CheckoutPage() {
         <div className="rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">
           {success}
         </div>
+      )}
+      {handoff && !prefilled.current && (handoffCustomer.isLoading || handoffAppointment.isLoading) && (
+        <Spinner />
+      )}
+      {handoff && (handoffCustomer.error || handoffAppointment.error) && (
+        <ErrorNote message="No se pudo cargar el turno a cobrar. Buscá el cliente manualmente." />
       )}
 
       <CustomerSearch selected={customer} onSelect={setCustomer} />
@@ -143,6 +198,15 @@ export function CheckoutPage() {
             </Button>
           </div>
         ))}
+
+        {linkedProviderEarning != null && linkedProviderEarning > 0 && (
+          <div className="rounded-lg bg-surface-high px-3 py-2 text-xs text-ink-soft">
+            De este cobro, <strong className="text-ink">{money(linkedProviderEarning)}</strong> son
+            la comisión de {linkedProviderName ?? "la profesional"}
+            {linkedEarningIsPreview ? " (estimada, se congela al cobrar)" : ""}. La factura queda
+            neta de esa comisión; lo que cobrás en mano es el total completo.
+          </div>
+        )}
 
         <Input
           label="Agregar servicio"

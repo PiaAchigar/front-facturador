@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "./client";
 import type {
+  AppointmentForCheckout,
   CashMovement,
   CheckoutResult,
   CommissionsReport,
@@ -25,6 +26,22 @@ export function useCreateCustomer() {
   return useMutation({
     mutationFn: (data: { name: string; dni: string; phone?: string; email?: string }) =>
       api<Customer>("/api/billing/customers", { method: "POST", body: JSON.stringify(data) }),
+  });
+}
+
+export function useCustomer(id: string | null) {
+  return useQuery({
+    queryKey: ["customer", id],
+    queryFn: () => api<Customer>(`/api/billing/customers/${id}`),
+    enabled: Boolean(id),
+  });
+}
+
+export function useAppointment(id: string | null) {
+  return useQuery({
+    queryKey: ["appointment", id],
+    queryFn: () => api<AppointmentForCheckout>(`/api/agenda/appointments/${id}`),
+    enabled: Boolean(id),
   });
 }
 
