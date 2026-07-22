@@ -132,18 +132,44 @@ export function CommissionsPage() {
             </table>
           </Card>
 
-          {report.data.totalsByProvider.length > 0 && (
-            <Card>
-              <h4 className="mb-2 font-medium">Total a pagar</h4>
-              <dl className="space-y-1 text-sm">
-                {report.data.totalsByProvider.map((t) => (
-                  <div key={t.providerId} className="flex justify-between">
-                    <dt>{t.name}</dt>
-                    <dd className="font-semibold">{money(t.total)}</dd>
-                  </div>
-                ))}
-              </dl>
-              <div className="mt-8 hidden border-t border-ink pt-2 text-sm print:block">
+          {report.data.settlement.length > 0 && (
+            <Card className="p-0">
+              <h4 className="p-3 pb-0 font-medium">Rendición por profesional</h4>
+              <p className="px-3 pt-1 text-xs text-ink-soft">
+                Comisiones ganadas menos lo que cada profesional ya cobró directo (transferencias
+                que no entraron a PiuBella). Saldo positivo: PiuBella le paga. Saldo negativo:
+                cobró de más y debe la diferencia.
+              </p>
+              <table className="mt-2 w-full text-sm">
+                <thead>
+                  <tr className="border-b border-surface-high text-left text-xs text-ink-soft">
+                    <th className="p-3">Profesional</th>
+                    <th className="p-3 text-right">Comisiones</th>
+                    <th className="p-3 text-right">Cobrado directo</th>
+                    <th className="p-3 text-right">Saldo</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {report.data.settlement.map((s) => (
+                    <tr key={s.providerId} className="border-b border-surface-high last:border-0">
+                      <td className="p-3">{s.name}</td>
+                      <td className="p-3 text-right">{money(s.commissions)}</td>
+                      <td className="p-3 text-right">{money(s.receivedDirect)}</td>
+                      <td
+                        className={`p-3 text-right font-semibold ${
+                          s.balance < 0 ? "text-red-700" : ""
+                        }`}
+                      >
+                        {money(s.balance)}
+                        <span className="block text-[10px] font-normal text-ink-soft">
+                          {s.balance >= 0 ? "a pagar" : "a favor de PiuBella"}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <div className="mx-3 mt-8 mb-3 hidden border-t border-ink pt-2 text-sm print:block">
                 Firma de conformidad: ______________________________
               </div>
             </Card>

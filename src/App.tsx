@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { AppShell } from "./components/AppShell";
+import { DayStatusPage } from "./features/accounts/DayStatusPage";
 import { CashRegisterPage } from "./features/cash/CashRegisterPage";
 import { DailyReportPage } from "./features/cash/DailyReportPage";
 import { CheckoutPage } from "./features/checkout/CheckoutPage";
@@ -35,6 +36,7 @@ export default function App() {
         <Route path="/caja" element={<CashRegisterPage />} />
         <Route path="/caja/rendicion" element={<DailyReportPage />} />
         <Route path="/comisiones" element={<CommissionsPage />} />
+        <Route path="/cuentas" element={<DayStatusPage />} />
       </Routes>
     </AppShell>
   );

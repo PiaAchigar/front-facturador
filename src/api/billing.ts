@@ -7,6 +7,7 @@ import type {
   CommissionsReport,
   Customer,
   DailyReport,
+  DayStatusReport,
   EmitBatchResult,
   InvoiceDetail,
   InvoiceSummary,
@@ -45,6 +46,13 @@ export function useAppointment(id: string | null) {
   });
 }
 
+export function useDayStatus(date: string) {
+  return useQuery({
+    queryKey: ["day-status", date],
+    queryFn: () => api<DayStatusReport>(`/api/billing/customers/day-status?date=${date}`),
+  });
+}
+
 export function useCustomerInvoices(customerId: string | null) {
   return useQuery({
     queryKey: ["customer-invoices", customerId],
@@ -78,6 +86,8 @@ export type CheckoutInput = {
     quantity: number;
     unitPrice?: number;
     priceMode?: "list" | "cash";
+    /** false ⇒ este ítem no va a la factura ARCA. Default true. */
+    billable?: boolean;
   }[];
   payment: {
     method: "cash" | "bank_transfer" | "mercadopago";

@@ -9,6 +9,8 @@ type Item = {
   service: Service;
   quantity: number;
   unitPrice: number;
+  /** false ⇒ este ítem no va a la factura ARCA (queda como cobro no declarado). */
+  billable: boolean;
 };
 
 function useDebounced(value: string, ms = 300): string {
@@ -58,6 +60,8 @@ export function CheckoutPage() {
     setCustomer(handoffCustomer.data);
     const appt = handoffAppointment.data;
     if (appt.serviceId) {
+      // La seña ya se cobró y facturó al reservar: acá se cobra solo el resto.
+      const remaining = Math.max(0, (appt.servicePrice ?? 0) - (appt.depositPaid ?? 0));
       setItems((prev) => [
         ...prev,
         {
@@ -69,7 +73,8 @@ export function CheckoutPage() {
             estimatedDurationMinutes: null,
           },
           quantity: 1,
-          unitPrice: appt.servicePrice ?? 0,
+          unitPrice: remaining,
+          billable: true,
         },
       ]);
     }
@@ -80,6 +85,7 @@ export function CheckoutPage() {
   const linkedProviderEarning = handoffAppointment.data?.providerEarning ?? null;
   const linkedProviderName = handoffAppointment.data?.providerName ?? null;
   const linkedEarningIsPreview = handoffAppointment.data?.providerEarningIsPreview ?? false;
+  const linkedDeposit = handoffAppointment.data?.depositPaid ?? 0;
 
   const total = useMemo(
     () => items.reduce((sum, i) => sum + i.unitPrice * i.quantity, 0),
@@ -101,7 +107,7 @@ export function CheckoutPage() {
   const addService = (svc: Service) => {
     setItems((prev) => [
       ...prev,
-      { service: svc, quantity: 1, unitPrice: svc.unitPriceCash ?? 0 },
+      { service: svc, quantity: 1, unitPrice: svc.unitPriceCash ?? 0, billable: true },
     ]);
     setServiceQuery("");
   };
@@ -117,6 +123,7 @@ export function CheckoutPage() {
           serviceId: i.service.id,
           quantity: i.quantity,
           unitPrice: i.unitPrice,
+          billable: i.billable,
         })),
         payment: {
           method,
@@ -193,18 +200,44 @@ export function CheckoutPage() {
             <span className="w-24 text-right text-sm font-medium">
               {money(item.unitPrice * item.quantity)}
             </span>
+            {wantsInvoice && (
+              <label
+                className="flex items-center gap-1 text-xs text-ink-soft"
+                title="Si está tildado, este ítem entra en la factura ARCA; si no, queda como cobro no declarado"
+              >
+                <input
+                  type="checkbox"
+                  checked={item.billable}
+                  onChange={(e) =>
+                    setItems((prev) =>
+                      prev.map((it, i) =>
+                        i === idx ? { ...it, billable: e.target.checked } : it,
+                      ),
+                    )
+                  }
+                  className="h-4 w-4 accent-primary"
+                />
+                ARCA
+              </label>
+            )}
             <Button variant="ghost" onClick={() => setItems((prev) => prev.filter((_, i) => i !== idx))}>
               ✕
             </Button>
           </div>
         ))}
 
+        {linkedDeposit > 0 && (
+          <div className="rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-xs text-green-800">
+            Seña a favor: <strong>{money(linkedDeposit)}</strong> (ya cobrada y facturada al
+            reservar). El ítem viene precargado con el resto a cobrar.
+          </div>
+        )}
         {linkedProviderEarning != null && linkedProviderEarning > 0 && (
           <div className="rounded-lg bg-surface-high px-3 py-2 text-xs text-ink-soft">
             De este cobro, <strong className="text-ink">{money(linkedProviderEarning)}</strong> son
             la comisión de {linkedProviderName ?? "la profesional"}
-            {linkedEarningIsPreview ? " (estimada, se congela al cobrar)" : ""}. La factura queda
-            neta de esa comisión; lo que cobrás en mano es el total completo.
+            {linkedEarningIsPreview ? " (estimada, se congela al cobrar)" : ""}. Es solo
+            informativo: la factura sale por el precio completo.
           </div>
         )}
 

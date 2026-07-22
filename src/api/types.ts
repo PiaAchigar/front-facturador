@@ -34,6 +34,8 @@ export type AppointmentForCheckout = {
   /** Comisión de la proveedora sobre este turno (congelada si ya se completó, estimada si no). */
   providerEarning: number | null;
   providerEarningIsPreview: boolean;
+  /** Seña ya pagada (y facturada) al reservar: queda a favor del cliente. */
+  depositPaid: number;
 };
 
 export type InvoiceSummary = {
@@ -123,6 +125,33 @@ export type CommissionsReport = {
     earning: number;
   }[];
   totalsByProvider: { providerId: string; name: string; total: number }[];
+  /** Rendición: comisiones − cobrado directo por la profesional = saldo. */
+  settlement: {
+    providerId: string;
+    name: string;
+    commissions: number;
+    receivedDirect: number;
+    balance: number;
+  }[];
+};
+
+export type DayStatusReport = {
+  date: string;
+  rows: {
+    appointmentId: string;
+    appointmentStart: string | null;
+    status: string | null;
+    customerId: string | null;
+    customerName: string | null;
+    customerPhone: string | null;
+    serviceName: string | null;
+    providerName: string | null;
+    servicePrice: number;
+    depositPaid: number;
+    totalPaid: number;
+    balanceDue: number;
+  }[];
+  totals: { deposits: number; paid: number; due: number };
 };
 
 export type EmitBatchResult = {

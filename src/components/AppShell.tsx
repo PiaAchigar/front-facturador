@@ -6,6 +6,7 @@ const NAV = [
   { to: "/facturas", label: "Facturas", end: false },
   { to: "/caja", label: "Caja", end: false },
   { to: "/comisiones", label: "Comisiones", end: false },
+  { to: "/cuentas", label: "Cuentas del día", end: false },
 ];
 
 export function AppShell({ children }: { children: ReactNode }) {
