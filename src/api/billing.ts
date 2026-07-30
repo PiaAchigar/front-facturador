@@ -11,6 +11,7 @@ import type {
   EmitBatchResult,
   InvoiceDetail,
   InvoiceSummary,
+  Issuer,
   Provider,
   Service,
 } from "./types";
@@ -43,6 +44,15 @@ export function useAppointment(id: string | null) {
     queryKey: ["appointment", id],
     queryFn: () => api<AppointmentForCheckout>(`/api/agenda/appointments/${id}`),
     enabled: Boolean(id),
+  });
+}
+
+/** Facturadores activos, para el selector de la cobranza. */
+export function useIssuers() {
+  return useQuery({
+    queryKey: ["issuers"],
+    queryFn: () => api<Issuer[]>("/api/billing/issuers?onlyActive=true"),
+    staleTime: 5 * 60_000,
   });
 }
 
@@ -79,6 +89,8 @@ export function useProviders() {
 
 export type CheckoutInput = {
   customerId: string;
+  /** Con qué identidad fiscal se factura. Si no viene, la marcada por defecto. */
+  issuerId?: string;
   appointmentId?: string;
   items: {
     serviceId?: string;

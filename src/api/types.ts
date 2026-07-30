@@ -14,6 +14,18 @@ export type Service = {
   estimatedDurationMinutes: number | null;
 };
 
+export type Issuer = {
+  id: string;
+  name: string | null;
+  cuit: string | null;
+  environment: string | null;
+  pointOfSale: number | null;
+  invoiceType: string | null;
+  isActive: boolean | null;
+  isDefault: boolean | null;
+  notes: string | null;
+};
+
 export type Provider = {
   id: string;
   fullName: string | null;
@@ -50,6 +62,10 @@ export type InvoiceSummary = {
   customerId: string | null;
   customerName: string | null;
   customerDni: string | null;
+  /** Facturador con el que se emite (null en facturas previas al multi-facturador). */
+  issuerId: string | null;
+  issuerName: string | null;
+  issuerCuit: string | null;
 };
 
 export type InvoiceDetail = InvoiceSummary & {

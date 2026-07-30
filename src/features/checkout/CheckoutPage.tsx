@@ -1,5 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useAppointment, useCheckout, useCustomer, useProviders, useServices } from "../../api/billing";
+import {
+  useAppointment,
+  useCheckout,
+  useCustomer,
+  useIssuers,
+  useProviders,
+  useServices,
+} from "../../api/billing";
 import type { Customer, Service } from "../../api/types";
 import { CustomerSearch } from "../../components/CustomerSearch";
 import { Button, Card, ErrorNote, Input, Spinner } from "../../components/ui";
@@ -40,6 +47,7 @@ export function CheckoutPage() {
   const [method, setMethod] = useState<"cash" | "bank_transfer" | "mercadopago">("cash");
   const [wantsInvoice, setWantsInvoice] = useState(false);
   const [paidToProvider, setPaidToProvider] = useState<string>("");
+  const [issuerId, setIssuerId] = useState<string>("");
   const [success, setSuccess] = useState<string | null>(null);
 
   const debouncedQuery = useDebounced(serviceQuery);
@@ -48,6 +56,15 @@ export function CheckoutPage() {
   const checkout = useCheckout();
   const handoffCustomer = useCustomer(handoff?.customerId ?? null);
   const handoffAppointment = useAppointment(handoff?.appointmentId ?? null);
+  const issuers = useIssuers();
+
+  // Preselecciona el facturador por defecto en cuanto carga la lista.
+  useEffect(() => {
+    if (issuerId || !issuers.data?.length) return;
+    setIssuerId((issuers.data.find((i) => i.isDefault) ?? issuers.data[0]!).id);
+  }, [issuers.data, issuerId]);
+
+  const selectedIssuer = issuers.data?.find((i) => i.id === issuerId) ?? null;
 
   // Precarga cliente + ítem del turno una sola vez, cuando llegan los datos
   // (viene de "Cobrar" en la agenda). Si el turno no tiene precio o ya se usó
@@ -59,14 +76,15 @@ export function CheckoutPage() {
     prefilled.current = true;
     setCustomer(handoffCustomer.data);
     const appt = handoffAppointment.data;
-    if (appt.serviceId) {
+    const serviceId = appt.serviceId;
+    if (serviceId) {
       // La seña ya se cobró y facturó al reservar: acá se cobra solo el resto.
       const remaining = Math.max(0, (appt.servicePrice ?? 0) - (appt.depositPaid ?? 0));
       setItems((prev) => [
         ...prev,
         {
           service: {
-            id: appt.serviceId,
+            id: serviceId,
             name: appt.serviceName,
             unitPriceList: null,
             unitPriceCash: null,
@@ -118,6 +136,7 @@ export function CheckoutPage() {
     checkout.mutate(
       {
         customerId: customer.id,
+        issuerId: issuerId || undefined,
         appointmentId: appointmentId ?? undefined,
         items: items.map((i) => ({
           serviceId: i.service.id,
@@ -304,6 +323,37 @@ export function CheckoutPage() {
             lote más tarde)
           </span>
         </label>
+
+        {/* Con qué identidad fiscal se emite: cada facturador tiene su propio
+            CUIT, certificado, punto de venta y numeración ante ARCA. */}
+        {wantsInvoice && !paidToProvider && (
+          <label className="ml-6 block text-sm">
+            <span className="mb-1 block text-xs font-medium text-ink-soft">Facturar como</span>
+            <select
+              value={issuerId}
+              onChange={(e) => setIssuerId(e.target.value)}
+              className="w-full max-w-sm rounded-lg border border-surface-highest bg-white px-3 py-2 text-sm"
+            >
+              {issuers.data?.length === 0 && <option value="">Sin facturadores cargados</option>}
+              {issuers.data?.map((i) => (
+                <option key={i.id} value={i.id}>
+                  {i.name}
+                  {i.isDefault ? " (por defecto)" : ""}
+                </option>
+              ))}
+            </select>
+            {selectedIssuer && (
+              <span className="mt-1 block text-xs text-ink-soft">
+                CUIT {selectedIssuer.cuit} · Pto. venta{" "}
+                {String(selectedIssuer.pointOfSale ?? "").padStart(4, "0")} · Factura{" "}
+                {selectedIssuer.invoiceType}
+                {selectedIssuer.environment === "homo" && (
+                  <strong className="text-amber-700"> · HOMOLOGACIÓN (comprobantes de prueba)</strong>
+                )}
+              </span>
+            )}
+          </label>
+        )}
 
         <div className="space-y-1">
           <label className="flex items-center gap-2 text-sm">

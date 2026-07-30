@@ -186,6 +186,7 @@ export function InvoiceListPage() {
               <th className="p-3" />
               <th className="p-3">Número</th>
               <th className="p-3">Cliente</th>
+              <th className="p-3">Facturador</th>
               <th className="p-3">Fecha</th>
               <th className="p-3 text-right">Total</th>
               <th className="p-3">Estado</th>
@@ -215,6 +216,12 @@ export function InvoiceListPage() {
                   </Link>
                 </td>
                 <td className="p-3">{inv.customerName ?? "—"}</td>
+                <td className="p-3">
+                  {inv.issuerName ?? "—"}
+                  {inv.issuerCuit && (
+                    <span className="block text-xs text-ink-soft">CUIT {inv.issuerCuit}</span>
+                  )}
+                </td>
                 <td className="p-3">{formatDateTime(inv.invoiceDate)}</td>
                 <td className="p-3 text-right font-medium">{money(inv.totalAmount)}</td>
                 <td className="p-3">
@@ -226,7 +233,7 @@ export function InvoiceListPage() {
             ))}
             {filtered.length === 0 && !invoices.isLoading && (
               <tr>
-                <td colSpan={6} className="p-6 text-center text-ink-soft">
+                <td colSpan={7} className="p-6 text-center text-ink-soft">
                   No hay facturas con este filtro.
                 </td>
               </tr>
