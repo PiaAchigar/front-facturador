@@ -69,7 +69,7 @@ export function InvoiceDetailPage() {
           <tbody>
             {invoice.lineItems.map((li) => (
               <tr key={li.id} className="border-b border-surface-high last:border-0">
-                <td className="py-2">{li.serviceName ?? li.productName ?? "—"}</td>
+                <td className="py-2">{li.description ?? li.serviceName ?? li.productName ?? "—"}</td>
                 <td className="py-2 text-right">{li.quantity}</td>
                 <td className="py-2 text-right">{money(li.unitPrice)}</td>
                 <td className="py-2 text-right">{money(li.totalAmount)}</td>

@@ -1,3 +1,4 @@
+import { Fragment, useMemo } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useDailyReport } from "../../api/billing";
 import { Button, Card, ErrorNote, Spinner } from "../../components/ui";
@@ -12,6 +13,20 @@ export function DailyReportPage() {
   const [params, setParams] = useSearchParams();
   const date = params.get("date") ?? todayLocal();
   const { data: report, isLoading, error } = useDailyReport(date);
+
+  // Los cobros se agrupan por cliente: una cobranza mixta (parte facturada a
+  // ARCA, parte no) genera dos pagos, y sueltos costaba ver que eran del mismo.
+  const groups = useMemo(() => {
+    type Row = NonNullable<typeof report>["payments"][number];
+    const map = new Map<string, { name: string; payments: Row[] }>();
+    for (const p of report?.payments ?? []) {
+      const key = p.customerId ?? p.customerName ?? "sin-cliente";
+      const entry = map.get(key) ?? { name: p.customerName ?? "Sin cliente", payments: [] };
+      entry.payments.push(p);
+      map.set(key, entry);
+    }
+    return [...map.values()];
+  }, [report]);
 
   return (
     <div className="max-w-3xl space-y-5">
@@ -56,28 +71,51 @@ export function DailyReportPage() {
                 </tr>
               </thead>
               <tbody>
-                {report.payments.map((p) => (
-                  <tr key={p.id} className="border-b border-surface-high last:border-0">
-                    <td className="p-3">{formatDateTime(p.paymentDate)}</td>
-                    <td className="p-3">
-                      {p.customerName ?? "Cobro"}
-                      {p.receivedByProviderName && (
-                        <span className="text-xs text-amber-700">
-                          {" "}
-                          (transferido a {p.receivedByProviderName})
-                        </span>
-                      )}
-                      {p.appointmentProviderEarning != null && p.appointmentProviderEarning > 0 && (
-                        <span className="block text-xs text-ink-soft">
-                          de esto, {money(p.appointmentProviderEarning)} son de{" "}
-                          {p.appointmentProviderName ?? "la profesional"}
-                        </span>
-                      )}
-                    </td>
-                    <td className="p-3">{PAYMENT_METHOD_LABELS[p.paymentMethod ?? ""] ?? "—"}</td>
-                    <td className="p-3">{p.isDeclared ? "Sí" : "No"}</td>
-                    <td className="p-3 text-right font-medium">{money(p.amount)}</td>
-                  </tr>
+                {groups.map((group) => (
+                  <Fragment key={group.name}>
+                    {/* Encabezado del cliente: agrupa sus cobros del día */}
+                    <tr className="border-b border-surface-high bg-surface-high/60">
+                      <td colSpan={5} className="px-3 py-2 text-xs font-semibold text-ink">
+                        {group.name}
+                        {group.payments.length > 1 && (
+                          <span className="ml-2 font-normal text-ink-soft">
+                            {group.payments.length} cobros ·{" "}
+                            {money(group.payments.reduce((s, p) => s + (p.amount ?? 0), 0))}
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                    {group.payments.map((p) => (
+                      <tr key={p.id} className="border-b border-surface-high last:border-0">
+                        <td className="p-3">{formatDateTime(p.paymentDate)}</td>
+                        <td className="p-3">
+                          {/* Sin factura a ARCA no es un cobro declarado: es un recibo */}
+                          <span className="font-medium">{p.isDeclared ? "Cobro" : "Recibo"}</span>
+                          {p.items.length > 0 && (
+                            <span className="text-ink-soft"> · {p.items.join(", ")}</span>
+                          )}
+                          {p.receivedByProviderName && (
+                            <span className="text-xs text-amber-700">
+                              {" "}
+                              (transferido a {p.receivedByProviderName})
+                            </span>
+                          )}
+                          {p.appointmentProviderEarning != null &&
+                            p.appointmentProviderEarning > 0 && (
+                              <span className="block text-xs text-ink-soft">
+                                de esto, {money(p.appointmentProviderEarning)} son de{" "}
+                                {p.appointmentProviderName ?? "la profesional"}
+                              </span>
+                            )}
+                        </td>
+                        <td className="p-3">
+                          {PAYMENT_METHOD_LABELS[p.paymentMethod ?? ""] ?? "—"}
+                        </td>
+                        <td className="p-3">{p.isDeclared ? "Sí" : "No"}</td>
+                        <td className="p-3 text-right font-medium">{money(p.amount)}</td>
+                      </tr>
+                    ))}
+                  </Fragment>
                 ))}
                 {report.cashMovements
                   .filter((m) => !m.paymentId)

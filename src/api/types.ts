@@ -71,6 +71,8 @@ export type InvoiceSummary = {
 export type InvoiceDetail = InvoiceSummary & {
   lineItems: {
     id: string;
+    /** Concepto propio de la línea (ej: "Seña de servicio: X"); si es null se cae al nombre del servicio. */
+    description: string | null;
     quantity: number | null;
     unitPrice: number | null;
     subtotal: number | null;
@@ -102,6 +104,9 @@ export type Payment = {
   /** Si el cobro vino de un turno, cuánto de este monto es comisión de la proveedora. */
   appointmentProviderName: string | null;
   appointmentProviderEarning: number | null;
+  customerId: string | null;
+  /** Servicios/productos cobrados en este pago (incluye los NO facturados). */
+  items: string[];
 };
 
 export type CashMovement = {

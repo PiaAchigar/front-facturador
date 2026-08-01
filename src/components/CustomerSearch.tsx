@@ -26,6 +26,18 @@ export function CustomerSearch({
   const search = useCustomerSearch(debounced);
   const create = useCreateCustomer();
 
+  /**
+   * Al elegir un cliente se limpia la búsqueda. Si no, al volver al modo
+   * búsqueda (después de cobrar, o al tocar "Cambiar") reaparecían el texto
+   * viejo y la lista de resultados desplegada debajo.
+   */
+  const pick = (customer: Customer) => {
+    setQuery("");
+    setShowNew(false);
+    setForm({ name: "", dni: "", phone: "" });
+    onSelect(customer);
+  };
+
   if (selected) {
     return (
       <Card className="flex items-center justify-between">
@@ -53,7 +65,7 @@ export function CustomerSearch({
       {search.isFetching && <Spinner />}
       {search.data?.map((customer) => (
         <Card key={customer.id} className="transition-shadow hover:shadow-md">
-          <button className="w-full text-left" onClick={() => onSelect(customer)}>
+          <button className="w-full text-left" onClick={() => pick(customer)}>
             <p className="font-medium">{customer.name}</p>
             <p className="text-xs text-ink-soft">DNI {customer.dni ?? "—"}</p>
           </button>
@@ -87,7 +99,7 @@ export function CustomerSearch({
               onClick={() =>
                 create.mutate(
                   { name: form.name, dni: form.dni, phone: form.phone || undefined },
-                  { onSuccess: onSelect },
+                  { onSuccess: pick },
                 )
               }
               disabled={create.isPending || form.name.length < 2 || !/^\d{7,8}$/.test(form.dni)}

@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useEmitBatch, useInvoices } from "../../api/billing";
 import { Badge, Button, Card, ErrorNote, Input, Spinner } from "../../components/ui";
 import {
@@ -19,6 +19,7 @@ const STATUS_TONES: Record<string, "neutral" | "success" | "warning" | "danger" 
 const EMPTY_FILTERS = { status: "", invoiceType: "", from: "", to: "", search: "" };
 
 export function InvoiceListPage() {
+  const navigate = useNavigate();
   const [status, setStatus] = useState<string>("");
   const [invoiceType, setInvoiceType] = useState<string>("");
   const [from, setFrom] = useState<string>("");
@@ -60,6 +61,17 @@ export function InvoiceListPage() {
       return haystack.includes(term);
     });
   }, [invoices.data, invoiceType, search]);
+
+  // Los borradores son lo accionable (hay que emitirlos), así que van arriba de
+  // todo; dentro de cada grupo, del más nuevo al más viejo.
+  const ordered = useMemo(() => {
+    const time = (d: string | null) => (d ? new Date(d).getTime() : 0);
+    return [...filtered].sort((a, b) => {
+      const draftDiff = Number(b.status === "draft") - Number(a.status === "draft");
+      if (draftDiff !== 0) return draftDiff;
+      return time(b.invoiceDate) - time(a.invoiceDate);
+    });
+  }, [filtered]);
 
   const drafts = filtered.filter((i) => i.status === "draft");
   const invoiceTypes = useMemo(
@@ -193,14 +205,16 @@ export function InvoiceListPage() {
             </tr>
           </thead>
           <tbody>
-            {filtered.map((inv) => (
+            {ordered.map((inv) => (
               <tr
                 key={inv.id}
-                className={`border-b border-surface-high last:border-0 ${
+                onClick={() => navigate(`/facturas/${inv.id}`)}
+                className={`cursor-pointer border-b border-surface-high transition-colors last:border-0 hover:bg-surface-high ${
                   inv.status === "cancelled" ? "opacity-60" : ""
                 }`}
               >
-                <td className="p-3">
+                {/* El check de selección no debe abrir la factura */}
+                <td className="p-3" onClick={(e) => e.stopPropagation()}>
                   {inv.status === "draft" && (
                     <input
                       type="checkbox"
@@ -211,7 +225,11 @@ export function InvoiceListPage() {
                   )}
                 </td>
                 <td className="p-3">
-                  <Link to={`/facturas/${inv.id}`} className="font-medium text-primary hover:underline">
+                  <Link
+                    to={`/facturas/${inv.id}`}
+                    onClick={(e) => e.stopPropagation()}
+                    className="font-medium text-primary hover:underline"
+                  >
                     {inv.invoiceType ?? "C"} {invoiceNumberFmt(2, inv.invoiceNumber)}
                   </Link>
                 </td>
