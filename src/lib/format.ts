@@ -31,6 +31,10 @@ export const PAYMENT_METHOD_LABELS: Record<string, string> = {
   cash: "Efectivo",
   bank_transfer: "Transferencia",
   mercadopago: "MercadoPago",
+  // Seña pagada con el saldo a favor del cliente (1.25.0). No suma a ningún
+  // total de caja —esa plata ya entró antes—, pero sí se lista en el detalle
+  // del día: sin esta etiqueta la fila mostraba el método como "—".
+  credit: "Saldo a favor",
 };
 
 export const INVOICE_STATUS_LABELS: Record<string, string> = {
