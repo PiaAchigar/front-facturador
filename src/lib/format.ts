@@ -31,6 +31,11 @@ export const PAYMENT_METHOD_LABELS: Record<string, string> = {
   cash: "Efectivo",
   bank_transfer: "Transferencia",
   mercadopago: "MercadoPago",
+  // Regla 5.10: un pack se paga con tarjeta más seguido que en efectivo.
+  // OJO: `credit_card` (tarjeta) y `credit` (saldo a favor) son cosas
+  // distintas y comparten prefijo.
+  debit_card: "Débito",
+  credit_card: "Crédito",
   // Seña pagada con el saldo a favor del cliente (1.25.0). No suma a ningún
   // total de caja —esa plata ya entró antes—, pero sí se lista en el detalle
   // del día: sin esta etiqueta la fila mostraba el método como "—".

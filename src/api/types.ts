@@ -123,7 +123,15 @@ export type DailyReport = {
   date: string;
   payments: Payment[];
   cashMovements: CashMovement[];
-  totalsByMethod: { cash: number; bank_transfer: number; mercadopago: number };
+  totalsByMethod: {
+    cash: number;
+    bank_transfer: number;
+    mercadopago: number;
+    // Exigidos por la regla 5.10: un pack se paga con tarjeta más seguido que
+    // en efectivo. Sin estas dos claves el cobro no sumaba a ningún total.
+    debit_card: number;
+    credit_card: number;
+  };
   declared: number;
   undeclared: number;
   paidToProviders: number;

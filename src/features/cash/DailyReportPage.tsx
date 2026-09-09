@@ -148,6 +148,14 @@ export function DailyReportPage() {
                   <dt className="text-ink-soft">MercadoPago</dt>
                   <dd className="font-medium">{money(report.totalsByMethod.mercadopago)}</dd>
                 </div>
+                <div className="flex justify-between">
+                  <dt className="text-ink-soft">Débito</dt>
+                  <dd className="font-medium">{money(report.totalsByMethod.debit_card)}</dd>
+                </div>
+                <div className="flex justify-between">
+                  <dt className="text-ink-soft">Crédito</dt>
+                  <dd className="font-medium">{money(report.totalsByMethod.credit_card)}</dd>
+                </div>
               </dl>
             </Card>
             <Card>
