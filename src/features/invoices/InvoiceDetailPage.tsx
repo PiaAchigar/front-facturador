@@ -12,6 +12,7 @@ import {
   formatDateTime,
   invoiceNumberFmt,
   money,
+  comprobante,
 } from "../../lib/format";
 
 export function InvoiceDetailPage() {
@@ -44,17 +45,27 @@ export function InvoiceDetailPage() {
       <Card className="space-y-4">
         <div className="flex items-start justify-between">
           <div>
+            {/* Una nota de crédito NO es una factura: se llama distinto acá
+                arriba y no sólo en la pastilla, o la ficha entera engaña. */}
             <h2 className="text-3xl font-semibold">
-              Factura {invoice.invoiceType ?? "C"} {invoiceNumberFmt(2, invoice.invoiceNumber)}
+              {comprobante(invoice.creditNoteOf).label} {invoice.invoiceType ?? "C"}{" "}
+              {invoiceNumberFmt(2, invoice.invoiceNumber)}
             </h2>
             <p className="text-sm text-ink-soft">
               {invoice.customerName ?? "Consumidor final"}
               {invoice.customerDni ? ` · DNI ${invoice.customerDni}` : ""}
             </p>
           </div>
-          <Badge tone={invoice.status === "cancelled" ? "danger" : invoice.status === "draft" ? "warning" : "success"}>
-            {INVOICE_STATUS_LABELS[invoice.status ?? ""] ?? invoice.status}
-          </Badge>
+          {/* Qué es y en qué estado está: dos pastillas, como en la lista.
+              La del tipo acompaña al comprobante toda su vida. */}
+          <div className="flex flex-wrap items-center gap-1">
+            <Badge tone={comprobante(invoice.creditNoteOf).tone}>
+              {comprobante(invoice.creditNoteOf).label}
+            </Badge>
+            <Badge tone={invoice.status === "cancelled" ? "danger" : invoice.status === "draft" ? "warning" : "success"}>
+              {INVOICE_STATUS_LABELS[invoice.status ?? ""] ?? invoice.status}
+            </Badge>
+          </div>
         </div>
 
         <table className="w-full text-sm">
@@ -100,7 +111,11 @@ export function InvoiceDetailPage() {
         <div className="flex gap-2">
           {invoice.status === "draft" && (
             <Button onClick={() => emit.mutate(invoice.id)} disabled={emit.isPending}>
-              {emit.isPending ? "Pidiendo CAE…" : "Emitir (pedir CAE)"}
+              {emit.isPending
+                ? "Pidiendo CAE…"
+                : invoice.creditNoteOf
+                  ? "Emitir nota de crédito"
+                  : "Emitir (pedir CAE)"}
             </Button>
           )}
           {lastCae?.cae && (

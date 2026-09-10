@@ -66,6 +66,11 @@ export type InvoiceSummary = {
   issuerId: string | null;
   issuerName: string | null;
   issuerCuit: string | null;
+  /** Concepto del comprobante. En una nota de crédito, el motivo. */
+  description: string | null;
+  /** No NULL = esta fila es una NOTA DE CRÉDITO de la factura apuntada, no una
+   *  factura. En ARCA es un comprobante propio, con su tipo y su numeración. */
+  creditNoteOf: string | null;
 };
 
 export type InvoiceDetail = InvoiceSummary & {

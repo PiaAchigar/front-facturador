@@ -4,6 +4,7 @@ import { useEmitBatch, useInvoices } from "../../api/billing";
 import { Badge, Button, Card, ErrorNote, Input, Spinner } from "../../components/ui";
 import {
   INVOICE_STATUS_LABELS,
+  comprobante,
   formatDateTime,
   invoiceNumberFmt,
   money,
@@ -230,7 +231,8 @@ export function InvoiceListPage() {
                     onClick={(e) => e.stopPropagation()}
                     className="font-medium text-primary hover:underline"
                   >
-                    {inv.invoiceType ?? "C"} {invoiceNumberFmt(2, inv.invoiceNumber)}
+                    {comprobante(inv.creditNoteOf).sigla} {inv.invoiceType ?? "C"}{" "}
+                    {invoiceNumberFmt(2, inv.invoiceNumber)}
                   </Link>
                 </td>
                 <td className="p-3">{inv.customerName ?? "—"}</td>
@@ -243,9 +245,19 @@ export function InvoiceListPage() {
                 <td className="p-3">{formatDateTime(inv.invoiceDate)}</td>
                 <td className="p-3 text-right font-medium">{money(inv.totalAmount)}</td>
                 <td className="p-3">
-                  <Badge tone={STATUS_TONES[inv.status ?? ""] ?? "neutral"}>
-                    {INVOICE_STATUS_LABELS[inv.status ?? ""] ?? inv.status}
-                  </Badge>
+                  {/* Dos preguntas distintas, dos pastillas: QUÉ es (nota de
+                      crédito en rojo, factura en verde) y en qué ESTADO está.
+                      Teñir la de estado haría que un borrador verde se leyera
+                      como emitido. La del tipo no cambia nunca: acompaña al
+                      comprobante también después de emitirse. */}
+                  <div className="flex flex-wrap items-center gap-1">
+                    <Badge tone={comprobante(inv.creditNoteOf).tone}>
+                      {comprobante(inv.creditNoteOf).label}
+                    </Badge>
+                    <Badge tone={STATUS_TONES[inv.status ?? ""] ?? "neutral"}>
+                      {INVOICE_STATUS_LABELS[inv.status ?? ""] ?? inv.status}
+                    </Badge>
+                  </div>
                 </td>
               </tr>
             ))}

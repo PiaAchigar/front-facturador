@@ -42,6 +42,20 @@ export const PAYMENT_METHOD_LABELS: Record<string, string> = {
   credit: "Saldo a favor",
 };
 
+/**
+ * Cómo se llama y de qué color va cada tipo de comprobante.
+ *
+ * Va aparte del estado a propósito: verde ya significa "Emitida" y rojo
+ * "Anulada", así que teñir el badge de ESTADO para distinguir una nota de
+ * crédito haría que un borrador se leyera como emitido. Son dos preguntas
+ * distintas —qué es y en qué estado está— y se responden con dos pastillas.
+ */
+export function comprobante(creditNoteOf: string | null | undefined) {
+  return creditNoteOf
+    ? { label: "Nota de crédito", tone: "danger" as const, sigla: "NC" }
+    : { label: "Factura", tone: "success" as const, sigla: "F" };
+}
+
 export const INVOICE_STATUS_LABELS: Record<string, string> = {
   draft: "Borrador",
   emitted: "Emitida",
