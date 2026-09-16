@@ -7,6 +7,7 @@ const PAYMENT_TYPE_LABELS: Record<string, string> = {
   per_hour: "Por hora",
   percentage: "Porcentaje",
   fixed_per_service: "Monto fijo",
+  promo: "Pago de promo",
 };
 
 function shiftDays(date: string, days: number): string {
