@@ -21,10 +21,18 @@ export function formatDateTime(iso: string | null): string {
   }).format(new Date(iso));
 }
 
-/** Número de comprobante estilo ARCA: 0002-00009929 */
-export function invoiceNumberFmt(pos: number, n: number | null): string {
+/** Número de comprobante estilo ARCA: 0002-00009929
+ *
+ *  El punto de venta no es decorativo: ARCA numera por (punto de venta, tipo),
+ *  así que hay una 00009929 por cada punto de venta y el número solo no
+ *  identifica nada. Si no lo sabemos (facturas previas al multi-facturador)
+ *  mostramos el correlativo sin inventar un punto de venta que podría ser
+ *  el de otra facturadora. */
+export function invoiceNumberFmt(pos: number | null | undefined, n: number | null): string {
   if (n == null) return "—";
-  return `${String(pos).padStart(4, "0")}-${String(n).padStart(8, "0")}`;
+  const numero = String(n).padStart(8, "0");
+  if (pos == null) return numero;
+  return `${String(pos).padStart(4, "0")}-${numero}`;
 }
 
 export const PAYMENT_METHOD_LABELS: Record<string, string> = {
