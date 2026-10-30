@@ -49,7 +49,7 @@ export function InvoiceDetailPage() {
                 arriba y no sólo en la pastilla, o la ficha entera engaña. */}
             <h2 className="text-3xl font-semibold">
               {comprobante(invoice.creditNoteOf).label} {invoice.invoiceType ?? "C"}{" "}
-              {invoiceNumberFmt(2, invoice.invoiceNumber)}
+              {invoiceNumberFmt(invoice.issuerPointOfSale, invoice.invoiceNumber)}
             </h2>
             <p className="text-sm text-ink-soft">
               {invoice.customerName ?? "Consumidor final"}

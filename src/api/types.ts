@@ -66,6 +66,10 @@ export type InvoiceSummary = {
   issuerId: string | null;
   issuerName: string | null;
   issuerCuit: string | null;
+  /** Punto de venta del facturador. ARCA numera por (punto de venta, tipo):
+   *  sin esto el número no identifica al comprobante. NULL en facturas
+   *  previas al multi-facturador. */
+  issuerPointOfSale: number | null;
   /** Concepto del comprobante. En una nota de crédito, el motivo. */
   description: string | null;
   /** No NULL = esta fila es una NOTA DE CRÉDITO de la factura apuntada, no una
@@ -193,6 +197,7 @@ export type EmitBatchResult = {
     invoiceId: string;
     ok: boolean;
     cae?: string;
+    pointOfSale?: number;
     invoiceNumber?: number;
     error?: string;
   }[];

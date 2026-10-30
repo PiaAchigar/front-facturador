@@ -54,7 +54,7 @@ export function InvoiceListPage() {
       const haystack = [
         inv.customerName,
         inv.customerDni,
-        invoiceNumberFmt(2, inv.invoiceNumber),
+        invoiceNumberFmt(inv.issuerPointOfSale, inv.invoiceNumber),
       ]
         .filter(Boolean)
         .join(" ")
@@ -182,7 +182,7 @@ export function InvoiceListPage() {
           {emitBatch.data.results.map((r) => (
             <p key={r.invoiceId} className={r.ok ? "text-green-700" : "text-red-700"}>
               {r.ok
-                ? `✓ Factura ${invoiceNumberFmt(2, r.invoiceNumber ?? null)} — CAE ${r.cae}`
+                ? `✓ Factura ${invoiceNumberFmt(r.pointOfSale, r.invoiceNumber ?? null)} — CAE ${r.cae}`
                 : `✗ ${r.error}`}
             </p>
           ))}
@@ -232,7 +232,7 @@ export function InvoiceListPage() {
                     className="font-medium text-primary hover:underline"
                   >
                     {comprobante(inv.creditNoteOf).sigla} {inv.invoiceType ?? "C"}{" "}
-                    {invoiceNumberFmt(2, inv.invoiceNumber)}
+                    {invoiceNumberFmt(inv.issuerPointOfSale, inv.invoiceNumber)}
                   </Link>
                 </td>
                 <td className="p-3">{inv.customerName ?? "—"}</td>
