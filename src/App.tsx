@@ -41,5 +41,17 @@ export default function App() {
     </AppShell>
   );
 
-  return <BrowserRouter>{isEmbedded ? <EmbedGate>{shell}</EmbedGate> : shell}</BrowserRouter>;
+  if (!isEmbedded) {
+    return (
+      <div className="flex h-screen items-center justify-center text-sm text-ink-soft">
+        Abrí la facturación desde el panel de Sistema Central para iniciar sesión.
+      </div>
+    );
+  }
+
+  return (
+    <BrowserRouter>
+      <EmbedGate>{shell}</EmbedGate>
+    </BrowserRouter>
+  );
 }
