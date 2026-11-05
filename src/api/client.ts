@@ -1,8 +1,6 @@
 import { getAuthToken } from "../lib/auth-token";
 
 const BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8787";
-/** Fallback de auth para correr el biller standalone en dev (sin el dashboard). */
-const API_KEY = import.meta.env.VITE_API_KEY as string | undefined;
 
 export class ApiError extends Error {
   status: number;
@@ -19,12 +17,8 @@ export async function api<T>(path: string, init?: RequestInit): Promise<T> {
   const { headers: initHeaders, ...rest } = init ?? {};
 
   // Embebido en el dashboard: el host manda el JWT del staff (rol real) por
-  // postMessage → header `Authorization`. Standalone (dev): cae al API key.
-  const auth: Record<string, string> = token
-    ? { Authorization: `Bearer ${token}` }
-    : API_KEY
-      ? { "x-api-key": API_KEY }
-      : {};
+  // postMessage → header `Authorization`.
+  const auth: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
 
   const res = await fetch(`${BASE_URL}${path}`, {
     ...rest,
