@@ -4,11 +4,14 @@ import { setAuthToken } from "./auth-token";
 
 /**
  * Modo embebido: el biller corre dentro de un <iframe> del dashboard.
- * Se activa con `?embed=1` en la URL (el host carga `/?embed=1`).
+ * Se activa con `?embed=1` en la URL (el host carga `/?embed=1`), o al estar
+ * dentro de un iframe: el parámetro se pierde al navegar, y si se recarga sólo
+ * el iframe en una subruta ya no está.
  */
 export const isEmbedded =
   typeof window !== "undefined" &&
-  new URLSearchParams(window.location.search).get("embed") === "1";
+  (window.self !== window.top ||
+    new URLSearchParams(window.location.search).get("embed") === "1");
 
 /** Origen del dashboard (host). Se valida en cada mensaje recibido. */
 const DASHBOARD_ORIGIN = import.meta.env.VITE_DASHBOARD_ORIGIN as string | undefined;
